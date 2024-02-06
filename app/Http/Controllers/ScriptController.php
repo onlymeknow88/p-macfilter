@@ -160,7 +160,7 @@ class ScriptController extends Controller
         $macAddress = $dhcp->mac_address;
         $computerName = $dhcp->computer_name;
         $lanWan = strtoupper($dhcp->lan_wan);
-        $username = strtoupper($dhcp->username);
+        $username = $dhcp->username;
 
         $script1 = "Remove-DhcpServerv4Filter -MacAddress '$macAddress'";
 
@@ -215,7 +215,7 @@ class ScriptController extends Controller
             $macAddress = $data->mac_address;
             $computerName = $data->computer_name;
             $lanWan = strtoupper($data->lan_wan);
-            $username = strtoupper($data->username);
+            $username = $data->username;
 
             $script = "add-DhcpServerv4Filter -List Allow -MacAddress '$macAddress' -Description '$computerName" . "_$lanWan" . "_$username'";
 
@@ -243,7 +243,7 @@ class ScriptController extends Controller
             $macAddress = $data->mac_address;
             $computerName = $data->computer_name;
             $lanWan = strtoupper($data->lan_wan);
-            $username = strtoupper($data->username);
+            $username = $data->username;
 
             $script = "add-DhcpServerv4Filter -List Deny -MacAddress '$macAddress' -Description '$computerName" . "_$lanWan" . "_$username'";
 
