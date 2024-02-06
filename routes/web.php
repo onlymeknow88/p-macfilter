@@ -31,6 +31,7 @@ Route::get('/',[LoginController::class,'index']);
 // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::resource('script', ScriptController::class)->middleware('auth');
 Route::get('/script/u-script/{id}',[ScriptController::class,'runScript'])->name('script.run');
+Route::get('/script/u-block/{id}',[ScriptController::class,'runBlock'])->name('script.runBlock');
 Route::get('/script/u-script',[App\Http\Controllers\ScriptController::class,'runScript']);
 
 Route::get('/clear', function () {

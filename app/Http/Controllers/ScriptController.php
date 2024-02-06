@@ -21,8 +21,8 @@ class ScriptController extends Controller
             $query = DhcpList::query();
 
             return DataTables::of($query)
-                ->addColumn('lan_wan', function ($item){
-                    if($item->lan_wan == 'L') {
+                ->addColumn('lan_wan', function ($item) {
+                    if ($item->lan_wan == 'L') {
                         $lan_wan = 'LAN';
                     } else {
                         $lan_wan = 'WIFI';
@@ -30,7 +30,10 @@ class ScriptController extends Controller
                     return $lan_wan;
                 })
                 ->addColumn('update_script', function ($item) {
-                    return '<a class="btn btn-warning btn-sm" href="' . route('script.run', $item->id) . '">Run Script</a>';
+                    return '<div class="d-flex justify-content-start gap-2">
+                    <button type="button" onclick="allowData(`' . route('script.run', $item->id) . '`)" class="btn btn-warning btn-sm">Allow MacADD</button>
+                    <button type="button" onclick="blockData(`' . route('script.runBlock', $item->id) . '`)" class="btn btn-danger btn-sm">Block MacADD</button>
+                    </div>';
                 })
                 ->addColumn('aksi', function ($item) {
                     return '
@@ -42,7 +45,7 @@ class ScriptController extends Controller
                     </div>
                     ';
                 })
-                ->rawColumns(['lan_wan','aksi', 'update_script'])
+                ->rawColumns(['lan_wan', 'aksi', 'update_script'])
                 ->make(true);
         }
 
@@ -73,14 +76,14 @@ class ScriptController extends Controller
                 'mac_address' => ['required', 'string', 'max:255'],
                 'computer_name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:255'],
-                
+
                 'lan_wan' => ['required'],
             ],
             [
                 'mac_address.required' => 'Silahkan isi Mac Address',
                 'computer_name.required' => 'Silahkan isi computer name',
                 'username.required' => 'Silahkan isi username',
-                
+
                 'lan_wan.required' => 'Silahkan isi LAN/WAN',
             ]
         );
@@ -135,15 +138,15 @@ class ScriptController extends Controller
                 'mac_address' => ['required', 'string', 'max:255'],
                 'computer_name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:255'],
-                
+
                 'lan_wan' => ['required'],
             ],
             [
                 'mac_address.required' => 'Silahkan isi Mac Address',
                 'computer_name.required' => 'Silahkan isi computer name',
                 'username.required' => 'Silahkan isi username',
-                
-                'lan_wan.required' => 'Silahkan isi LAN/WAN',
+
+                'lan_wan.required' => 'Silahkan isi koneksi type',
             ]
         );
 
@@ -153,7 +156,26 @@ class ScriptController extends Controller
 
         $data = $request->all();
         $dhcp = DhcpList::find($id);
+
+        $macAddress = $dhcp->mac_address;
+        $computerName = $dhcp->computer_name;
+        $lanWan = strtoupper($dhcp->lan_wan);
+        $username = strtoupper($dhcp->username);
+
+        $script1 = "Remove-DhcpServerv4Filter -MacAddress '$macAddress'";
+
+        $del = shell_exec("powershell.exe $script1");
+
         $dhcp->update($data);
+
+        if ($dhcp) {
+            // Add a new DHCP filter with the updated MAC address
+            $newMacAddress = $data['mac_address'];
+            $addScript = "Add-DhcpServerv4Filter -List Allow -MacAddress '$newMacAddress' -Description '$computerName" . "_$lanWan" . "_$username'";
+            $addResult = shell_exec("powershell.exe $addScript");
+        }
+
+
 
         return ResponseFormatter::success([
             $dhcp
@@ -169,12 +191,21 @@ class ScriptController extends Controller
     public function destroy($id)
     {
         $data = DhcpList::find($id);
+
+        $macAddress = $data->mac_address;
+
+        $script = "Remove-DhcpServerv4Filter -MacAddress '$macAddress'";
+
+        $out = shell_exec("powershell.exe $script");
+
         $data->delete();
 
         return ResponseFormatter::success([
             null
         ], 'Deleted');
     }
+
+
 
     public function runScript($id)
     {
@@ -198,6 +229,35 @@ class ScriptController extends Controller
             // return view('v_script', compact('out'));
         }
 
-        return redirect()->route('script.index');
+        // return redirect()->route('script.index');
+        return ResponseFormatter::success([
+            $data
+        ], 'Allow Success');
+    }
+
+    public function runBlock($id)
+    {
+        $data = DhcpList::find($id);
+
+        if ($data) {
+            $macAddress = $data->mac_address;
+            $computerName = $data->computer_name;
+            $lanWan = strtoupper($data->lan_wan);
+            $username = strtoupper($data->username);
+
+            $script = "add-DhcpServerv4Filter -List Deny -MacAddress '$macAddress' -Description '$computerName" . "_$lanWan" . "_$username'";
+
+            // Execute the PowerShell script
+            $out = shell_exec("powershell.exe $script");
+
+            $data->update([
+                'status' => 'Block'
+            ]);
+        }
+
+        // return redirect()->route('script.index');
+        return ResponseFormatter::success([
+            $data
+        ], 'Block Success');
     }
 }

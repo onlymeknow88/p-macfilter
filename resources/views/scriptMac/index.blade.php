@@ -112,6 +112,40 @@
             },
         });
 
+        function allowData(url) {
+            $.get({
+                    url: url,
+                    // data: new FormData(originalForm),
+                })
+                .done(response => {
+                    Swal.fire(response.meta.message, "You clicked the button!", "success");
+                    datatable.ajax.reload();
+                })
+                .fail(errors => {
+                    if (errors.status == 422) {
+                        loopErrors(errors.responseJSON.errors);
+                        return;
+                    }
+                });
+        }
+
+        function blockData(url) {
+            $.get({
+                    url: url,
+                    // data: new FormData(originalForm),
+                })
+                .done(response => {
+                    Swal.fire(response.meta.message, "You clicked the button!", "success");
+                    datatable.ajax.reload();
+                })
+                .fail(errors => {
+                    if (errors.status == 422) {
+                        loopErrors(errors.responseJSON.errors);
+                        return;
+                    }
+                });
+        }
+
         function addForm(url, title = 'Tambah') {
             $(modal).modal('show');
             $(`${modal} .modal-title`).text(title);
@@ -161,27 +195,6 @@
             }
         });
 
-        function submitForm(originalForm) {
-            $.post({
-                    url: $(originalForm).attr('action'),
-                    data: new FormData(originalForm),
-                    dataType: 'json',
-                    contentType: false,
-                    cache: false,
-                    processData: false
-                })
-                .done(response => {
-                    $(modal).modal('hide');
-                    // Swal.fire(response.meta.message, "You clicked the button!", "success");
-                    datatable.ajax.reload();
-                })
-                .fail(errors => {
-                    if (errors.status == 422) {
-                        loopErrors(errors.responseJSON.errors);
-                        return;
-                    }
-                });
-        }
 
         function submitForm(originalForm) {
             $.post({
